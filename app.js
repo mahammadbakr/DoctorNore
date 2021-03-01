@@ -3,6 +3,9 @@ const dotenv=require('dotenv')
 // const mongoose=require('mongoose')
 const bodyparser=require('body-parser')
 const cors=require('cors')
+const morgan = require('morgan')
+const mongoose = require('mongoose')
+
 // const http=require('http')
 // const morgan = require('morgan');
 // const logger = require('winston');
@@ -21,6 +24,31 @@ dotenv.config({path:'./config.env'});
 app.use(cors());
 app.use(bodyparser.urlencoded({extended:true}))
 app.use(bodyparser.json())
+const config = require('./config')
+
+// print the request log on console
+app.use(morgan('dev'))
+
+// set the secret key variable for jwt
+app.set('jwt-secret', config.secret)
+
+// index page, just for testing
+app.get('/', (req, res) => {
+  res.send('Hello JWT')
+})
+
+// configure api router
+app.use('/api', require('./Router/index'))
+// app.use('/api/add', require('./Controller/AddRoute'))
+
+mongoose.connect(config.mongodbUri)
+mongoose.Promise = global.Promise
+const db = mongoose.connection
+db.on('error', console.error)
+db.once('open', ()=>{
+    console.log('connected to mongodb server')
+})
+
 // app.engine('html', require('ejs').renderFile);
 // app.set("view engine", "html");
 
@@ -108,21 +136,6 @@ app.use(bodyparser.json())
 // });
 
 
-
-
-////conecting to database
-
-// const db=process.env.DATABASE
-// mongoose.connect(db, {
-//     useCreateIndex:true,
-//     useNewUrlParser:true,
-//     useFindAndModify:false,
-//     useUnifiedTopology:true
-// })
-// .then(()=>console.log(`connection done`))
-// .catch(err=>console.log(err))
-
-
 // app.use(bodyparser.urlencoded({ extended: false }));
 // app.use(bodyparser.json());
 // app.use(cors());
@@ -145,6 +158,9 @@ app.use(bodyparser.urlencoded({
 // parse application/json
 app.use(bodyparser.json());
 
+var publicDir = require('path').join(__dirname,'/Uploads'); 
+app.use(express.static(publicDir)); 
+
 // ////// routers
 // const router=require('./Routers/Router')
 
@@ -165,27 +181,27 @@ app.use(bodyparser.json());
 // });
 
 
-app.use((err, req, res, next) => {
-  let {
-    statusCode = 500,
-  } = err;
-  const {
-    message,
-  } = err;
+// app.use((err, req, res, next) => {
+//   let {
+//     statusCode = 500,
+//   } = err;
+//   const {
+//     message,
+//   } = err;
 
-  // Validation Errors
-  if (err.message.startsWith('ValidationError')) {
-    statusCode = 422;
-  }
+//   // Validation Errors
+//   if (err.message.startsWith('ValidationError')) {
+//     statusCode = 422;
+//   }
 
-  logger.error(`Error: ${message}`);
-  res.status(statusCode);
-  res.json({
-    error: true,
-    statusCode,
-    message,
-  });
-});
+//   logger.error(`Error: ${message}`);
+//   res.status(statusCode);
+//   res.json({
+//     error: true,
+//     statusCode,
+//     message,
+//   });
+// });
 
 ////listing the api
 const PORT=process.env.PORT || 5000
